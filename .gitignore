@@ -29,10 +29,12 @@ media
 
 # Virtual Environment
 .env
-.venv
 env/
 venv/
 ENV/
+# Keeping .venv and .qodo
+!.venv/
+!.qodo/
 
 # VS Code
 .vscode/

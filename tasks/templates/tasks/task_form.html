@@ -1,0 +1,349 @@
+{% extends 'tasks/base.html' %}
+
+{% block title %}
+    {% if form.instance.pk %}Edit Task{% else %}New Task{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function handleStatusChange(newStatus, clickedSwitch) {
+    // Prevent multiple switches from being checked
+    document.querySelectorAll('.status-switches .form-check-input').forEach(switch_ => {
+        if (switch_ !== clickedSwitch) {
+            switch_.checked = false;
+        }
+    });
+
+    // Get the current task ID from the URL
+    const urlParts = window.location.pathname.split('/');
+    const taskId = urlParts[urlParts.length - 2];
+
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Create and submit form
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = window.location.pathname; // Current URL
+    form.style.display = 'none';
+
+    // Add CSRF token
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = csrfToken;
+    form.appendChild(csrfInput);
+
+    // Add status
+    const statusInput = document.createElement('input');
+    statusInput.type = 'hidden';
+    statusInput.name = 'status';
+    statusInput.value = newStatus;
+    form.appendChild(statusInput);
+
+    // Add to document and submit
+    document.body.appendChild(form);
+    form.submit();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Set initial card status
+    const card = document.querySelector('.card');
+    const currentStatus = document.querySelector('.status-switches .form-check-input:checked');
+    if (currentStatus) {
+        card.classList.add(`${currentStatus.value}-task`);
+    }
+
+    // Handle form submission
+    const taskForm = document.getElementById('taskForm');
+    if (taskForm) {
+        taskForm.addEventListener('submit', function(e) {
+            const titleInput = this.querySelector('input[name="title"]');
+            const prioritySelect = this.querySelector('select[name="priority"]');
+
+            // Clear previous error messages
+            document.querySelectorAll('.alert-danger').forEach(alert => alert.remove());
+
+            // Basic validation
+            if (!titleInput.value.trim() || !prioritySelect.value) {
+                e.preventDefault();
+                
+                if (!titleInput.value.trim()) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'alert alert-danger mt-2';
+                    errorDiv.textContent = 'Title is required';
+                    titleInput.parentElement.appendChild(errorDiv);
+                }
+
+                if (!prioritySelect.value) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'alert alert-danger mt-2';
+                    errorDiv.textContent = 'Priority is required';
+                    prioritySelect.parentElement.appendChild(errorDiv);
+                }
+            }
+        });
+    }
+});</script>
+
+<style>
+.completed-task {
+    background-color: #f8f9fa;
+    transition: background-color 0.3s ease;
+}
+
+.form-switch {
+    padding-left: 2.5em;
+}
+
+.form-check-input {
+    cursor: pointer;
+}
+
+.form-switch .form-check-input {
+    width: 3em;
+    height: 1.5em;
+    transition: background-position .15s ease-in-out;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.status-section {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.status-section:hover {
+    background-color: #e9ecef;
+}
+
+.status-section h5 {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.status-switches .form-check {
+    padding: 1rem;
+    background: white;
+    border-radius: 0.5rem;
+    margin: 0;
+    width: 30%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.status-switches .form-check::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    transition: all 0.3s ease;
+}
+
+.status-switches .form-check:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.status-switches .form-check-label {
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.status-switches .form-check-input {
+    width: 3em;
+    height: 1.5em;
+    margin-right: 1rem;
+    cursor: pointer;
+}
+
+/* To Do switch styles */
+#status_todo:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.status-switches .form-check:nth-child(1)::before {
+    background-color: #0d6efd;
+}
+
+/* In Progress switch styles */
+#status_in_progress:checked {
+    background-color: #ffc107;
+    border-color: #ffc107;
+}
+
+.status-switches .form-check:nth-child(2)::before {
+    background-color: #ffc107;
+}
+
+/* Completed switch styles */
+#status_completed:checked {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.status-switches .form-check:nth-child(3)::before {
+    background-color: #198754;
+}
+
+/* Task card status styles */
+.todo-task {
+    border-left: 4px solid #0d6efd !important;
+}
+
+.in-progress-task {
+    border-left: 4px solid #ffc107 !important;
+}
+
+.completed-task {
+    border-left: 4px solid #198754 !important;
+    background-color: #f8f9fa;
+}
+
+.completed-task .task-title {
+    text-decoration: line-through;
+    color: #6c757d;
+}
+
+/* Animation for switches */
+.form-check-input {
+    transition: all 0.3s ease;
+}
+
+.form-check-input:not(:checked) {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+}
+
+/* Status icon animations */
+.fa-spinner {
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Hover effects for switches */
+.status-switches .form-check:hover .form-check-input:not(:checked) {
+    background-color: #dee2e6;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h2>{% if form.instance.pk %}Edit Task{% else %}New Task{% endif %}</h2>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'tasks:task_create' %}" id="taskForm">
+                    {% csrf_token %}
+                    
+                    {% if form.instance.pk %}
+                    <div class="status-section mb-4">
+                        <h5 class="mb-3">Task Status</h5>
+                        <div class="d-flex justify-content-between align-items-center status-switches">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="status" id="status_todo" value="todo" 
+                                    {% if form.instance.status == 'todo' %}checked{% endif %} 
+                                    onclick="handleStatusChange('todo', this)">
+                                <label class="form-check-label" for="status_todo">
+                                    <i class="fas fa-clipboard-list text-primary"></i> To Do
+                                </label>
+                            </div>
+                            
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="status" id="status_in_progress" value="in_progress" 
+                                    {% if form.instance.status == 'in_progress' %}checked{% endif %} 
+                                    onclick="handleStatusChange('in_progress', this)">
+                                <label class="form-check-label" for="status_in_progress">
+                                    <i class="fas fa-spinner text-warning"></i> In Progress
+                                </label>
+                            </div>
+                            
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="status" id="status_completed" value="completed" 
+                                    {% if form.instance.status == 'completed' %}checked{% endif %} 
+                                    onclick="handleStatusChange('completed', this)">
+                                <label class="form-check-label" for="status_completed">
+                                    <i class="fas fa-check-circle text-success"></i> Completed
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label">Title</label>
+                        {% if form.title.errors %}
+                        <div class="alert alert-danger">
+                            {{ form.title.errors }}
+                        </div>
+                        {% endif %}
+                        {{ form.title }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                        {% if form.description.errors %}
+                        <div class="alert alert-danger">
+                            {{ form.description.errors }}
+                        </div>
+                        {% endif %}
+                        {{ form.description }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.due_date.id_for_label }}" class="form-label">Due Date</label>
+                        {% if form.due_date.errors %}
+                        <div class="alert alert-danger">
+                            {{ form.due_date.errors }}
+                        </div>
+                        {% endif %}
+                        {{ form.due_date }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.priority.id_for_label }}" class="form-label">Priority</label>
+                        {% if form.priority.errors %}
+                        <div class="alert alert-danger">
+                            {{ form.priority.errors }}
+                        </div>
+                        {% endif %}
+                        {{ form.priority }}
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'tasks:task_list' %}" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            {% if form.instance.pk %}Save Changes{% else %}Create Task{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

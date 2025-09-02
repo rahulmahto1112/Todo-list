@@ -1,0 +1,254 @@
+{% extends 'tasks/base.html' %}
+{% load static %}
+
+{% block title %}Tasks List{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Sortable for each task column
+    const columns = document.querySelectorAll('.task-column-content');
+    columns.forEach(column => {
+        new Sortable(column, {
+            group: 'tasks',
+            animation: 150,
+            ghostClass: 'task-item-ghost',
+            dragClass: 'dragging',
+            onEnd: function(evt) {
+                const taskId = evt.item.dataset.taskId;
+                const newStatus = evt.to.dataset.status;
+                
+                // Send AJAX request to update task status
+                htmx.ajax('POST', `/task/update-status/${taskId}/`, {
+                    values: { status: newStatus },
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
+            }
+        });
+    });
+
+    // Add animation classes to tasks
+    document.querySelectorAll('.task-item').forEach((task, index) => {
+        task.classList.add('animate-slide-in');
+        task.style.animationDelay = `${index * 0.1}s`;
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>Tasks</h1>
+            <a href="{% url 'tasks:task_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Task
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="filter-section">
+            <form method="get" class="row g-3">
+                {{ search_form.as_p }}
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                    <a href="{% url 'tasks:task_list' %}" class="btn btn-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        {% if tasks %}
+        {% csrf_token %}
+        <div class="task-board">
+            <!-- To Do Column -->
+            <div class="task-column">
+                <h3 class="task-column-header">
+                    <i class="fas fa-clipboard-list"></i> To Do
+                </h3>
+                <div class="task-column-content" data-status="pending">
+                    {% for task in tasks %}
+                    {% if not task.status %}
+                    <div class="card task-item priority-{{ task.priority }}" data-task-id="{{ task.pk }}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title task-title">{{ task.title }}</h5>
+                                <div>
+                                    <span class="badge bg-{% if task.priority == 'high' %}danger{% elif task.priority == 'medium' %}warning{% else %}success{% endif %} priority-badge">
+                                        <i class="fas fa-flag"></i> {{ task.priority }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            {% if task.description %}
+                            <p class="card-text">{{ task.description }}</p>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <div class="due-date">
+                                    {% if task.due_date %}
+                                    <i class="far fa-calendar-alt"></i> {{ task.due_date }}
+                                    {% if task.due_date == today %}
+                                    <span class="badge bg-warning">Today</span>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="btn-group">
+                                    <a href="{% url 'tasks:task_update' task.pk %}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'tasks:task_delete' task.pk %}" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- In Progress Column -->
+            <div class="task-column">
+                <h3 class="task-column-header">
+                    <i class="fas fa-spinner"></i> In Progress
+                </h3>
+                <div class="task-column-content" data-status="in-progress">
+                    {% for task in tasks %}
+                    {% if task.status == 'in_progress' %}
+                    <div class="card task-item priority-{{ task.priority }}" data-task-id="{{ task.pk }}">
+                        <div class="card-body">
+                            <!-- Same card structure as To Do -->
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title task-title">{{ task.title }}</h5>
+                                <div>
+                                    <span class="badge bg-{% if task.priority == 'high' %}danger{% elif task.priority == 'medium' %}warning{% else %}success{% endif %} priority-badge">
+                                        <i class="fas fa-flag"></i> {{ task.priority }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            {% if task.description %}
+                            <p class="card-text">{{ task.description }}</p>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <div class="due-date">
+                                    {% if task.due_date %}
+                                    <i class="far fa-calendar-alt"></i> {{ task.due_date }}
+                                    {% if task.due_date == today %}
+                                    <span class="badge bg-warning">Today</span>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="btn-group">
+                                    <a href="{% url 'tasks:task_update' task.pk %}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'tasks:task_delete' task.pk %}" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Completed Column -->
+            <div class="task-column">
+                <h3 class="task-column-header">
+                    <i class="fas fa-check-circle"></i> Completed
+                </h3>
+                <div class="task-column-content" data-status="completed">
+                    {% for task in tasks %}
+                    {% if task.status %}
+                    <div class="card task-item task-completed priority-{{ task.priority }}" data-task-id="{{ task.pk }}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title task-title">{{ task.title }}</h5>
+                                <div>
+                                    <span class="badge bg-{% if task.priority == 'high' %}danger{% elif task.priority == 'medium' %}warning{% else %}success{% endif %} priority-badge">
+                                        <i class="fas fa-flag"></i> {{ task.priority }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            {% if task.description %}
+                            <p class="card-text">{{ task.description }}</p>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <div class="due-date">
+                                    {% if task.due_date %}
+                                    <i class="far fa-calendar-alt"></i> {{ task.due_date }}
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="btn-group">
+                                    <a href="{% url 'tasks:task_update' task.pk %}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'tasks:task_delete' task.pk %}" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {% if is_paginated %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="alert alert-info">
+            No tasks found. <a href="{% url 'tasks:task_create' %}">Create a new task</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

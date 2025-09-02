@@ -178,13 +178,10 @@ todo-list/
 4. Push to the branch
 5. Create a Pull Request
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Support
 
-For support, email your-email@example.com or create an issue in the GitHub repository.
+For support, dharambirmahto.official@gmail.com or create an issue in the GitHub repository.
 
 ## Acknowledgments
 
